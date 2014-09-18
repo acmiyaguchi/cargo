@@ -10,7 +10,7 @@ docopt!(Options, "
 Compile and execute all examples of the project.
 
 Usage:
-    cargo example [options] [--] [<args>...]
+    cargo example [options] [<name>]
 
 Options:
     -h, --help              Print this message
@@ -24,13 +24,15 @@ Options:
 All of the trailing arguments are passed to the test binaries generated for
 filtering tests and generally providing options configuring how they run.
 ",  flag_jobs: Option<uint>, flag_target: Option<String>,
-    flag_manifest_path: Option<String>)
+    flag_manifest_path: Option<String>, arg_name: Option<String>)
 
 pub fn execute(options: Options, shell: &mut MultiShell) -> CliResult<Option<()>> {
     let root = try!(find_root_manifest_for_cwd(options.flag_manifest_path));
     shell.set_verbose(options.flag_verbose);
 
     let mut ops = ops::ExampleOptions {
+        list: options.flag_list,
+        example_name: arg_name,
         compile_opts: ops::CompileOptions {
             update: options.flag_update_remotes,
             env: "test",
@@ -40,11 +42,10 @@ pub fn execute(options: Options, shell: &mut MultiShell) -> CliResult<Option<()>
             dev_deps: true,
         },
     };
-
-    let err = try!(ops::example(&root, &mut ops,
-                                  options.arg_args.as_slice()).map_err(|err| {
-        CliError::from_boxed(err, 101)
-    }));
+    
+    let err = try!(ops::example(&root, &mut ops, options.arg_args.as_slice()).map_err(|err| {
+            CliError::from_boxed(err, 101)
+        })) 
     match err {
         None => Ok(None),
         Some(err) => {
